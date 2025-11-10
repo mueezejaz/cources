@@ -181,9 +181,6 @@ export default function VerifyCertificatePage() {
                             </div>
                             <span className="text-xl font-bold" style={{ color: '#111827' }}>HubIt</span>
                         </Link>
-                        <Link href="/courses" className="font-semibold transition" style={{ color: '#374151' }}>
-                            Browse Courses
-                        </Link>
                     </div>
                 </div>
             </nav>

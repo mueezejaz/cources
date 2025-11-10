@@ -69,9 +69,9 @@ export async function GET(request) {
                 ? new Date(progress.lastUpdated).toLocaleDateString()
                 : new Date().toLocaleDateString(),
             email: progress.email,
-            course: courseData.title,
+            course: "Introduction to Operating System",
             completedLessons: progress.completedLessons.length,
-            totalLessons: courseData.lessons.length
+            totalLessons: 5,
         });
 
     } catch (error) {
