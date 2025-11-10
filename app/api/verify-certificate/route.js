@@ -49,7 +49,7 @@ export async function GET(request) {
             );
         }
 
-        const allLessonsCompleted = progress.completedLessons.length === courseData.lessons.length;
+        const allLessonsCompleted = progress.completedLessons.length === courseData;
 
         if (!allLessonsCompleted) {
             return NextResponse.json(
