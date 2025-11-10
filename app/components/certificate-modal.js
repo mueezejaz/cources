@@ -2,11 +2,8 @@
 
 import { useState, useRef } from "react"
 import domtoimage from 'dom-to-image-more';
-
-
 import { X, Download } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
-import html2canvas from "html2canvas"
 import { Input } from "@/components/ui/input"
 
 export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
@@ -58,7 +55,7 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
     }
 
     // Create verification URL
-    const verificationUrl = `http://localhost:3000/verify-certificate?id=${certificateId}&email=${encodeURIComponent(userEmail)}&course=${encodeURIComponent(courseName)}`
+    const verificationUrl = `https://courses.hubit.agency/verify-certificate?id=${certificateId}&email=${encodeURIComponent(userEmail)}&course=${encodeURIComponent(courseName)}`
 
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
