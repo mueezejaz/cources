@@ -13,9 +13,9 @@ export async function GET(request) {
         // Validate required parameters
         if (!certificateId || !email || !course) {
             return NextResponse.json(
-                { 
-                    success: false, 
-                    message: 'Missing required parameters' 
+                {
+                    success: false,
+                    message: 'Missing required parameters'
                 },
                 { status: 400 }
             );
@@ -28,22 +28,22 @@ export async function GET(request) {
 
         if (!progress) {
             return NextResponse.json(
-                { 
-                    success: false, 
-                    message: 'No certificate found for this email' 
+                {
+                    success: false,
+                    message: 'No certificate found for this email'
                 },
                 { status: 404 }
             );
         }
 
         // Check if the course is completed (all lessons completed)
-        const courseData = getCourseById(progress.courseId);
-        
+        const courseData = 5;
+
         if (!courseData) {
             return NextResponse.json(
-                { 
-                    success: false, 
-                    message: 'Invalid course' 
+                {
+                    success: false,
+                    message: 'Invalid course'
                 },
                 { status: 404 }
             );
@@ -53,9 +53,9 @@ export async function GET(request) {
 
         if (!allLessonsCompleted) {
             return NextResponse.json(
-                { 
-                    success: false, 
-                    message: 'Course not completed yet' 
+                {
+                    success: false,
+                    message: 'Course not completed yet'
                 },
                 { status: 400 }
             );
@@ -65,8 +65,8 @@ export async function GET(request) {
         return NextResponse.json({
             success: true,
             message: 'Certificate verified successfully',
-            issuedDate: progress.lastUpdated 
-                ? new Date(progress.lastUpdated).toLocaleDateString() 
+            issuedDate: progress.lastUpdated
+                ? new Date(progress.lastUpdated).toLocaleDateString()
                 : new Date().toLocaleDateString(),
             email: progress.email,
             course: courseData.title,
@@ -77,9 +77,9 @@ export async function GET(request) {
     } catch (error) {
         console.error('Error verifying certificate:', error);
         return NextResponse.json(
-            { 
-                success: false, 
-                message: 'Failed to verify certificate' 
+            {
+                success: false,
+                message: 'Failed to verify certificate'
             },
             { status: 500 }
         );
