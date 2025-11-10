@@ -1,23 +1,117 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { getCourseById } from "@/app/lib/course-data"
 import { CertificateModal } from "@/app/components/certificate-modal"
 import { LessonQuiz } from "@/app/components/lesson-quiz"
 
 export default function CoursePage() {
+    const { isLoaded, isSignedIn, user } = useUser()
+    const router = useRouter()
     const course = getCourseById()
+
     const [currentLessonId, setCurrentLessonId] = useState(1)
     const [completedLessons, setCompletedLessons] = useState([])
     const [showCertificate, setShowCertificate] = useState(false)
     const [quizSubmitted, setQuizSubmitted] = useState({})
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+
+    // Check authentication and load progress
+    useEffect(() => {
+        if (isLoaded) {
+            if (!isSignedIn) {
+                // Redirect to sign-in if not authenticated
+                router.push('/sign-in')
+                return
+            }
+
+            // Load user progress
+            loadUserProgress()
+        }
+    }, [isLoaded, isSignedIn, router])
+
+    // Load user progress from API
+    const loadUserProgress = async () => {
+        try {
+            setLoading(true)
+            const email = user?.primaryEmailAddress?.emailAddress
+
+            if (!email) {
+                console.error('No email found')
+                setLoading(false)
+                return
+            }
+
+            const response = await fetch(`/api/progress?email=${encodeURIComponent(email)}`)
+
+            if (response.ok) {
+                const result = await response.json()
+
+                if (result.success && result.data) {
+                    setCurrentLessonId(result.data.currentLessonId || 1)
+                    setCompletedLessons(result.data.completedLessons || [])
+                    setQuizSubmitted(result.data.quizSubmitted || {})
+                }
+            } else if (response.status === 401) {
+                router.push('/sign-in')
+            }
+        } catch (error) {
+            console.error('Error loading progress:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Save progress to API
+    const saveProgress = async (updates) => {
+        try {
+            setSaving(true)
+            const email = user?.primaryEmailAddress?.emailAddress
+
+            if (!email) return
+
+            const response = await fetch('/api/progress', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    ...updates
+                }),
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to save progress')
+            }
+        } catch (error) {
+            console.error('Error saving progress:', error)
+        } finally {
+            setSaving(false)
+        }
+    }
 
     if (!course) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <p>Course not found</p>
+            </div>
+        )
+    }
+
+    // Show loading state
+    if (loading || !isLoaded) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-700 font-semibold">Loading your progress...</p>
+                </div>
             </div>
         )
     }
@@ -29,33 +123,69 @@ export default function CoursePage() {
     const isQuizSubmitted = quizSubmitted[currentLessonId]
 
     const handleQuizComplete = () => {
-        setQuizSubmitted({
+        const newQuizSubmitted = {
             ...quizSubmitted,
             [currentLessonId]: true,
-        })
-        handleMarkComplete();
+        }
+        setQuizSubmitted(newQuizSubmitted)
+        handleMarkComplete(newQuizSubmitted)
     }
 
-    const handleMarkComplete = () => {
-        if (!isLessonCompleted && isQuizSubmitted) {
-            setCompletedLessons([...completedLessons, currentLessonId])
+    const handleMarkComplete = (updatedQuizSubmitted = quizSubmitted) => {
+        if (!isLessonCompleted && updatedQuizSubmitted[currentLessonId]) {
+            const newCompletedLessons = [...completedLessons, currentLessonId]
+            setCompletedLessons(newCompletedLessons)
+
+            // Save to database
+            saveProgress({
+                currentLessonId,
+                completedLessons: newCompletedLessons,
+                quizSubmitted: updatedQuizSubmitted
+            })
         }
     }
 
     const handleNext = () => {
         const currentIndex = course.lessons.findIndex((l) => l.id === currentLessonId)
         if (currentIndex < course.lessons.length - 1) {
-            setCurrentLessonId(course.lessons[currentIndex + 1].id)
+            const nextLessonId = course.lessons[currentIndex + 1].id
+            setCurrentLessonId(nextLessonId)
             setQuizSubmitted({})
+
+            // Save current lesson progress
+            saveProgress({
+                currentLessonId: nextLessonId,
+                completedLessons,
+                quizSubmitted: {}
+            })
         }
     }
 
     const handlePrevious = () => {
         const currentIndex = course.lessons.findIndex((l) => l.id === currentLessonId)
         if (currentIndex > 0) {
-            setCurrentLessonId(course.lessons[currentIndex - 1].id)
+            const prevLessonId = course.lessons[currentIndex - 1].id
+            setCurrentLessonId(prevLessonId)
             setQuizSubmitted({})
+
+            // Save current lesson progress
+            saveProgress({
+                currentLessonId: prevLessonId,
+                completedLessons,
+                quizSubmitted: {}
+            })
         }
+    }
+
+    const handleLessonSelect = (lessonId) => {
+        setCurrentLessonId(lessonId)
+
+        // Save current lesson selection
+        saveProgress({
+            currentLessonId: lessonId,
+            completedLessons,
+            quizSubmitted
+        })
     }
 
     return (
@@ -70,9 +200,16 @@ export default function CoursePage() {
                             </div>
                             <span className="text-xl font-bold text-gray-900">HubIt</span>
                         </Link>
-                        <Link href="/courses" className="text-gray-700 hover:text-red-600 font-semibold transition">
-                            Back to Courses
-                        </Link>
+                        <div className="flex items-center gap-4">
+                            {saving && (
+                                <span className="text-sm text-gray-600">
+                                    Saving...
+                                </span>
+                            )}
+                            <Link href="/courses" className="text-gray-700 hover:text-red-600 font-semibold transition">
+                                Back to Courses
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -136,7 +273,6 @@ export default function CoursePage() {
 
                                 {currentLesson.quiz && <LessonQuiz quiz={currentLesson.quiz} onComplete={handleQuizComplete} />}
 
-
                                 {/* Navigation Buttons */}
                                 <div className="flex gap-4 pt-4 border-t-2 border-red-600">
                                     <button
@@ -175,10 +311,10 @@ export default function CoursePage() {
                                 {course.lessons.map((lesson) => (
                                     <button
                                         key={lesson.id}
-                                        onClick={() => setCurrentLessonId(lesson.id)}
+                                        onClick={() => handleLessonSelect(lesson.id)}
                                         className={`w-full text-left p-3 rounded-lg transition font-semibold ${currentLessonId === lesson.id
-                                            ? "bg-red-600 text-white"
-                                            : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                                                ? "bg-red-600 text-white"
+                                                : "bg-gray-100 text-gray-900 hover:bg-gray-200"
                                             }`}
                                     >
                                         <div className="flex items-start gap-2">
