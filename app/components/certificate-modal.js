@@ -55,7 +55,7 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
     }
 
     // Create verification URL
-    const verificationUrl = `https://courses.hubit.agency/verify-certificate?id=${certificateId}&email=${encodeURIComponent(userEmail)}&course=${encodeURIComponent(courseName)}`
+    const verificationUrl = `https://courses.hubit.agency/api/verify-certificate?id=${certificateId}&email=${encodeURIComponent(userEmail)}&course=${encodeURIComponent(courseName)}`
 
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
