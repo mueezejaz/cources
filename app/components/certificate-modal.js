@@ -1,38 +1,50 @@
 "use client"
 
 import { useState, useRef } from "react"
+import domtoimage from 'dom-to-image-more';
+
+
 import { X, Download } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import html2canvas from "html2canvas"
 import { Input } from "@/components/ui/input"
 
-export function CertificateModal({ isOpen, onClose, courseName }) {
+export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
     const [userName, setUserName] = useState("")
     const [showCertificate, setShowCertificate] = useState(false)
     const certificateRef = useRef()
     const [isDownloading, setIsDownloading] = useState(false)
+    const [certificateId] = useState(Math.random().toString(36).substring(2, 10).toUpperCase())
 
     if (!isOpen) return null
 
     const handleDownload = async () => {
-        if (!certificateRef.current) return
+        if (!certificateRef.current) return;
 
         try {
-            setIsDownloading(true)
-            const canvas = await html2canvas(certificateRef.current, {
-                backgroundColor: "#ffffff",
-                scale: 2,
-            })
-            const link = document.createElement("a")
-            link.href = canvas.toDataURL("image/png")
-            link.download = `${userName}_certificate.png`
-            link.click()
-        } catch (error) {
-            console.error("Error downloading certificate:", error)
-        } finally {
-            setIsDownloading(false)
+            const dataUrl = await domtoimage.toPng(certificateRef.current);
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `${userName}_${courseName}_certificate.png`;
+            link.click();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to download certificate.');
+        }
+    };
+
+    // Helper function to ensure html2canvas-safe color
+    function toSafeColor(color) {
+        const ctx = document.createElement("canvas").getContext("2d");
+        try {
+            ctx.fillStyle = color; // browser converts unsupported colors to rgb automatically
+            return ctx.fillStyle;
+        } catch {
+            return "#000000"; // fallback color if conversion fails
         }
     }
+
+
 
     const handleGenerate = () => {
         if (userName.trim()) {
@@ -45,14 +57,17 @@ export function CertificateModal({ isOpen, onClose, courseName }) {
         setUserName("")
     }
 
+    // Create verification URL
+    const verificationUrl = `http://localhost:3000/verify-certificate?id=${certificateId}&email=${encodeURIComponent(userEmail)}&course=${encodeURIComponent(courseName)}`
+
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-4 border-red-600">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" style={{ border: '4px solid #dc2626' }}>
                 {/* Header */}
-                <div className="sticky top-0 bg-red-600 text-white border-b border-red-600 p-6 flex justify-between items-center">
+                <div className="sticky top-0 p-6 flex justify-between items-center" style={{ backgroundColor: '#dc2626', color: 'white' }}>
                     <h2 className="text-2xl font-bold">Congratulations!</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-red-700 rounded-lg transition">
-                        <X size={24} className="text-white" />
+                    <button onClick={onClose} className="p-2 rounded-lg transition" style={{ backgroundColor: 'rgba(0,0,0,0.1)' }}>
+                        <X size={24} style={{ color: 'white' }} />
                     </button>
                 </div>
 
@@ -62,20 +77,25 @@ export function CertificateModal({ isOpen, onClose, courseName }) {
                         // Input Name
                         <div className="space-y-6">
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Enter Your Name</h3>
-                                <p className="text-gray-600 mb-4">Your name will appear on your certificate</p>
+                                <h3 className="text-lg font-semibold mb-2" style={{ color: '#111827' }}>Enter Your Name</h3>
+                                <p className="mb-4" style={{ color: '#4b5563' }}>Your name will appear on your certificate</p>
                                 <Input
                                     type="text"
                                     value={userName}
                                     onChange={(e) => setUserName(e.target.value)}
                                     placeholder="Enter your full name"
-                                    className="w-full border-2 border-red-600 text-gray-900"
+                                    className="w-full"
+                                    style={{ borderWidth: '2px', borderColor: '#dc2626', color: '#111827' }}
                                 />
                             </div>
                             <button
                                 onClick={handleGenerate}
                                 disabled={!userName.trim()}
-                                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                    backgroundColor: userName.trim() ? '#dc2626' : '#9ca3af',
+                                    color: 'white'
+                                }}
                             >
                                 Generate Certificate
                             </button>
@@ -85,34 +105,36 @@ export function CertificateModal({ isOpen, onClose, courseName }) {
                         <div className="space-y-6">
                             <div
                                 ref={certificateRef}
-                                className="bg-white border-4 border-red-600 rounded-lg p-12 text-center shadow-lg"
+                                data-certificate="true"
+                                className="bg-white rounded-lg p-12 text-center shadow-lg"
+                                style={{ border: '4px solid #dc2626' }}
                             >
                                 {/* Certificate Header */}
                                 <div className="mb-8">
-                                    <div className="inline-block px-4 py-2 bg-red-600 text-white rounded-lg mb-4 font-bold text-lg">
+                                    <div className="inline-block px-4 py-2 rounded-lg mb-4 font-bold text-lg" style={{ backgroundColor: '#dc2626', color: 'white' }}>
                                         HubIt
                                     </div>
                                 </div>
 
-                                <h1 className="text-4xl font-bold text-gray-900 mb-2">Certificate of Completion</h1>
-                                <div className="w-24 h-1 bg-red-600 mx-auto mb-8" />
+                                <h1 className="text-4xl font-bold mb-2" style={{ color: '#111827' }}>Certificate of Completion</h1>
+                                <div className="mx-auto mb-8" style={{ width: '96px', height: '4px', backgroundColor: '#dc2626' }} />
 
-                                <p className="text-gray-700 text-lg mb-4">This is to certify that</p>
-                                <h2 className="text-4xl font-bold text-red-600 mb-6 border-b-4 border-red-600 pb-3">{userName}</h2>
+                                <p className="text-lg mb-4" style={{ color: '#374151' }}>This is to certify that</p>
+                                <h2 className="text-4xl font-bold mb-6 pb-3" style={{ color: '#dc2626', borderBottom: '4px solid #dc2626' }}>{userName}</h2>
 
-                                <p className="text-gray-700 text-lg mb-8">has successfully completed the course</p>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-12">{courseName}</h3>
+                                <p className="text-lg mb-8" style={{ color: '#374151' }}>has successfully completed the course</p>
+                                <h3 className="text-2xl font-bold mb-12" style={{ color: '#111827' }}>{courseName}</h3>
 
                                 <div className="mb-12 text-center">
-                                    <div className="text-gray-900 mb-2">✓</div>
-                                    <p className="text-sm text-gray-700 font-semibold">Verified by HubIt</p>
+                                    <div className="mb-2" style={{ color: '#111827', fontSize: '24px' }}>✓</div>
+                                    <p className="text-sm font-semibold" style={{ color: '#374151' }}>Verified by HubIt</p>
                                 </div>
 
                                 {/* QR Code */}
                                 <div className="flex justify-center mb-8">
-                                    <div className="bg-white p-3 rounded-lg border-2 border-red-600">
+                                    <div className="bg-white p-3 rounded-lg" style={{ border: '2px solid #dc2626' }}>
                                         <QRCodeSVG
-                                            value={`https://hubit.com/certificate/${userName}/${courseName}`}
+                                            value={verificationUrl}
                                             size={120}
                                             level="H"
                                             includeMargin={true}
@@ -122,10 +144,11 @@ export function CertificateModal({ isOpen, onClose, courseName }) {
                                     </div>
                                 </div>
 
-                                <div className="text-sm text-gray-700 border-t border-gray-300 pt-4">
-                                    <p>Certificate ID: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+                                <div className="text-sm pt-4" style={{ color: '#374151', borderTop: '1px solid #d1d5db' }}>
+                                    <p>Certificate ID: {certificateId}</p>
                                     <p>Issued on {new Date().toLocaleDateString()}</p>
                                     <p className="font-bold mt-2">HubIt Online Learning Platform</p>
+                                    <p className="text-xs mt-2" style={{ color: '#6b7280' }}>Scan QR code to verify certificate</p>
                                 </div>
                             </div>
 
@@ -133,14 +156,20 @@ export function CertificateModal({ isOpen, onClose, courseName }) {
                             <div className="flex gap-4">
                                 <button
                                     onClick={handleBack}
-                                    className="flex-1 border-2 border-red-600 text-red-600 bg-white hover:bg-red-50 font-bold py-3 px-4 rounded-lg transition"
+                                    className="flex-1 font-bold py-3 px-4 rounded-lg transition"
+                                    style={{
+                                        border: '2px solid #dc2626',
+                                        color: '#dc2626',
+                                        backgroundColor: 'white'
+                                    }}
                                 >
                                     Back
                                 </button>
                                 <button
                                     onClick={handleDownload}
                                     disabled={isDownloading}
-                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 font-bold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    style={{ backgroundColor: '#dc2626', color: 'white' }}
                                 >
                                     <Download size={20} />
                                     {isDownloading ? "Downloading..." : "Download Certificate"}

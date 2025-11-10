@@ -1,5 +1,12 @@
 import Link from "next/link"
-
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs'
 export default function Home() {
   return (
     <main className="min-h-screen bg-white">
@@ -7,19 +14,40 @@ export default function Home() {
       <nav className="sticky top-0 z-50 bg-white border-b-2 border-red-600 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
+
+            {/* Logo Section (Stays on the left) */}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold">
                 H
               </div>
               <span className="text-xl font-bold text-gray-900">HubIt</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Link href="/courses">
+
+            {/* Right-Side Wrapper (Groups Auth and Button) */}
+            <div className="flex items-center gap-4">
+
+              {/* "Get Started" Button */}
+              <Link href="/courses/os">
                 <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2 rounded-lg transition">
                   Get Started
                 </button>
               </Link>
+
+              {/* Auth Section (User Profile) */}
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+
+              {/* NOTE: You probably also want to add your <SignedOut> buttons here
+          from your previous code, so users can log in. 
+          Example:
+          <SignedOut>
+            <SignInButton />
+            <SignUpButton>...</SignUpButton>
+          </SignedOut>
+        */}
             </div>
+
           </div>
         </div>
       </nav>
@@ -36,14 +64,11 @@ export default function Home() {
               with HubIt today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link href="/courses">
+              <Link href="/courses/os">
                 <button className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg transition w-full sm:w-auto">
                   Start Course
                 </button>
               </Link>
-              <button className="border-2 border-red-600 text-red-600 hover:bg-red-50 font-bold py-3 px-8 rounded-lg transition w-full sm:w-auto">
-                Learn More
-              </button>
             </div>
           </div>
           <div className="relative h-96 rounded-xl bg-red-50 border-2 border-red-600 flex items-center justify-center">
@@ -78,7 +103,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-    </main>
+    </main >
   )
 }
 

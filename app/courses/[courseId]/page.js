@@ -208,9 +208,6 @@ export default function CoursePage() {
                                     Saving...
                                 </span>
                             )}
-                            <Link href="/courses" className="text-gray-700 hover:text-red-600 font-semibold transition">
-                                Back to Courses
-                            </Link>
                         </div>
                     </div>
                 </div>
@@ -333,8 +330,8 @@ export default function CoursePage() {
                                         key={lesson.id}
                                         onClick={() => handleLessonSelect(lesson.id)}
                                         className={`w-full text-left p-3 rounded-lg transition font-semibold ${currentLessonId === lesson.id
-                                                ? "bg-red-600 text-white"
-                                                : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                                            ? "bg-red-600 text-white"
+                                            : "bg-gray-100 text-gray-900 hover:bg-gray-200"
                                             }`}
                                     >
                                         <div className="flex items-start gap-2">
@@ -355,6 +352,7 @@ export default function CoursePage() {
                     isOpen={showCertificate}
                     onClose={() => setShowCertificate(false)}
                     courseName={course.title}
+                    userEmail={user?.primaryEmailAddress?.emailAddress || ""}
                 />
             )}
         </main>
