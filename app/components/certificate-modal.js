@@ -18,30 +18,48 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
     const handleDownload = async () => {
         if (!certificateRef.current) return;
 
+        setIsDownloading(true);
+
         try {
-            const dataUrl = await domtoimage.toPng(certificateRef.current);
+            // Get the certificate element
+            const node = certificateRef.current;
+
+            // Set a fixed width for HD output (1920px for Full HD)
+            const hdWidth = 1920;
+            const scale = hdWidth / node.offsetWidth;
+
+            // Configure for high quality output
+            const config = {
+                quality: 1.0,
+                width: hdWidth,
+                height: node.offsetHeight * scale,
+                style: {
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top left',
+                    width: `${node.offsetWidth}px`,
+                    height: `${node.offsetHeight}px`
+                },
+                pixelRatio: 2 // Higher pixel ratio for better quality
+            };
+
+            // Generate high-quality PNG
+            const dataUrl = await domtoimage.toPng(node, config);
+
+            // Create and trigger download
             const link = document.createElement('a');
             link.href = dataUrl;
-            link.download = `${userName}_${courseName}_certificate.png`;
+            link.download = `${userName.replace(/\s+/g, '_')}_${courseName.replace(/\s+/g, '_')}_certificate.png`;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+
         } catch (err) {
-            console.error(err);
-            alert('Failed to download certificate.');
+            console.error('Download error:', err);
+            alert('Failed to download certificate. Please try again.');
+        } finally {
+            setIsDownloading(false);
         }
     };
-
-    // Helper function to ensure html2canvas-safe color
-    function toSafeColor(color) {
-        const ctx = document.createElement("canvas").getContext("2d");
-        try {
-            ctx.fillStyle = color; // browser converts unsupported colors to rgb automatically
-            return ctx.fillStyle;
-        } catch {
-            return "#000000"; // fallback color if conversion fails
-        }
-    }
-
-
 
     const handleGenerate = () => {
         if (userName.trim()) {
@@ -104,7 +122,10 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
                                 ref={certificateRef}
                                 data-certificate="true"
                                 className="bg-white rounded-lg p-12 text-center shadow-lg"
-                                style={{ border: '4px solid #dc2626' }}
+                                style={{
+                                    border: '4px solid #dc2626',
+                                    minWidth: '800px' // Ensures consistent base size for scaling
+                                }}
                             >
                                 {/* Certificate Header */}
                                 <div className="mb-8">
