@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
@@ -20,32 +20,19 @@ export default function CoursePage() {
     const [quizSubmitted, setQuizSubmitted] = useState({})
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-
-    // Check authentication and load progress
-    useEffect(() => {
-        if (isLoaded) {
-            if (!isSignedIn) {
-                // Redirect to sign-in if not authenticated
-                router.push('/sign-in')
-                return
-            }
-
-            // Load user progress
-            loadUserProgress()
-        }
-    }, [isLoaded, isSignedIn, router])
+    // Add a key to force quiz component remount
+    const [quizKey, setQuizKey] = useState(0)
 
     // Load user progress from API
-    const loadUserProgress = async () => {
+    const loadUserProgress = useCallback(async () => {
+        if (!isSignedIn || !user?.primaryEmailAddress?.emailAddress) {
+            setLoading(false)
+            return
+        }
+
         try {
             setLoading(true)
-            const email = user?.primaryEmailAddress?.emailAddress
-
-            if (!email) {
-                console.error('No email found')
-                setLoading(false)
-                return
-            }
+            const email = user.primaryEmailAddress.emailAddress
 
             const response = await fetch(`/api/progress?email=${encodeURIComponent(email)}`)
 
@@ -65,7 +52,18 @@ export default function CoursePage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [isSignedIn, user, router])
+
+    // Check authentication and load progress
+    useEffect(() => {
+        if (isLoaded) {
+            if (!isSignedIn) {
+                router.push('/sign-in')
+                return
+            }
+            loadUserProgress()
+        }
+    }, [isLoaded, isSignedIn, loadUserProgress, router])
 
     // Save progress to API
     const saveProgress = async (updates) => {
@@ -150,13 +148,14 @@ export default function CoursePage() {
         if (currentIndex < course.lessons.length - 1) {
             const nextLessonId = course.lessons[currentIndex + 1].id
             setCurrentLessonId(nextLessonId)
-            setQuizSubmitted({})
+            // Force quiz component to remount
+            setQuizKey(prev => prev + 1)
 
             // Save current lesson progress
             saveProgress({
                 currentLessonId: nextLessonId,
                 completedLessons,
-                quizSubmitted: {}
+                quizSubmitted
             })
         }
     }
@@ -166,19 +165,22 @@ export default function CoursePage() {
         if (currentIndex > 0) {
             const prevLessonId = course.lessons[currentIndex - 1].id
             setCurrentLessonId(prevLessonId)
-            setQuizSubmitted({})
+            // Force quiz component to remount
+            setQuizKey(prev => prev + 1)
 
             // Save current lesson progress
             saveProgress({
                 currentLessonId: prevLessonId,
                 completedLessons,
-                quizSubmitted: {}
+                quizSubmitted
             })
         }
     }
 
     const handleLessonSelect = (lessonId) => {
         setCurrentLessonId(lessonId)
+        // Force quiz component to remount
+        setQuizKey(prev => prev + 1)
 
         // Save current lesson selection
         saveProgress({
@@ -271,7 +273,25 @@ export default function CoursePage() {
                                     </div>
                                 </Card>
 
-                                {currentLesson.quiz && <LessonQuiz quiz={currentLesson.quiz} onComplete={handleQuizComplete} />}
+                                {/* Quiz Component with key to force remount */}
+                                {currentLesson.quiz && !isQuizSubmitted && (
+                                    <LessonQuiz
+                                        key={quizKey}
+                                        quiz={currentLesson.quiz}
+                                        onComplete={handleQuizComplete}
+                                    />
+                                )}
+
+                                {/* Show completion message if quiz is already submitted */}
+                                {isQuizSubmitted && (
+                                    <Card className="p-8 border-2 border-green-600 bg-green-50">
+                                        <div className="text-center">
+                                            <div className="text-4xl mb-4">✅</div>
+                                            <h3 className="text-2xl font-bold text-gray-900 mb-2">Lesson Completed!</h3>
+                                            <p className="text-gray-700">You've already completed this lesson's quiz.</p>
+                                        </div>
+                                    </Card>
+                                )}
 
                                 {/* Navigation Buttons */}
                                 <div className="flex gap-4 pt-4 border-t-2 border-red-600">
