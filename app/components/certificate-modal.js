@@ -11,6 +11,7 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
     const [showCertificate, setShowCertificate] = useState(false)
     const certificateRef = useRef()
     const [isDownloading, setIsDownloading] = useState(false)
+    const [isHDMode, setIsHDMode] = useState(false)
     const [certificateId] = useState(Math.random().toString(36).substring(2, 10).toUpperCase())
 
     if (!isOpen) return null
@@ -21,25 +22,19 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
         setIsDownloading(true);
 
         try {
+            // Switch to HD mode
+            setIsHDMode(true);
+
+            // Wait for the DOM to update with HD styles
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // Get the certificate element
             const node = certificateRef.current;
-
-            // Set a fixed width for HD output (1920px for Full HD)
-            const hdWidth = 1920;
-            const scale = hdWidth / node.offsetWidth;
 
             // Configure for high quality output
             const config = {
                 quality: 1.0,
-                width: hdWidth,
-                height: node.offsetHeight * scale,
-                style: {
-                    transform: `scale(${scale})`,
-                    transformOrigin: 'top left',
-                    width: `${node.offsetWidth}px`,
-                    height: `${node.offsetHeight}px`
-                },
-                pixelRatio: 2 // Higher pixel ratio for better quality
+                pixelRatio: 2
             };
 
             // Generate high-quality PNG
@@ -53,9 +48,13 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
             link.click();
             document.body.removeChild(link);
 
+            // Switch back to mobile view
+            setIsHDMode(false);
+
         } catch (err) {
             console.error('Download error:', err);
             alert('Failed to download certificate. Please try again.');
+            setIsHDMode(false);
         } finally {
             setIsDownloading(false);
         }
@@ -121,39 +120,126 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
                             <div
                                 ref={certificateRef}
                                 data-certificate="true"
-                                className="bg-white rounded-lg p-12 text-center shadow-lg"
+                                className="bg-white rounded-lg text-center shadow-lg"
                                 style={{
                                     border: '4px solid #dc2626',
-                                    minWidth: '800px' // Ensures consistent base size for scaling
+                                    width: isHDMode ? '1200px' : 'auto',
+                                    padding: isHDMode ? '80px' : '24px',
+                                    position: isHDMode ? 'fixed' : 'relative',
+                                    left: isHDMode ? '-9999px' : 'auto',
+                                    top: isHDMode ? '0' : 'auto'
                                 }}
                             >
                                 {/* Certificate Header */}
-                                <div className="mb-8">
-                                    <div className="inline-block px-4 py-2 rounded-lg mb-4 font-bold text-lg" style={{ backgroundColor: '#dc2626', color: 'white' }}>
+                                <div style={{ marginBottom: isHDMode ? '48px' : '24px' }}>
+                                    <div
+                                        className="inline-block px-4 py-2 rounded-lg font-bold"
+                                        style={{
+                                            backgroundColor: '#dc2626',
+                                            color: 'white',
+                                            fontSize: isHDMode ? '28px' : '18px',
+                                            marginBottom: isHDMode ? '24px' : '16px'
+                                        }}
+                                    >
                                         HubIt
                                     </div>
                                 </div>
 
-                                <h1 className="text-4xl font-bold mb-2" style={{ color: '#111827' }}>Certificate of Completion</h1>
-                                <div className="mx-auto mb-8" style={{ width: '96px', height: '4px', backgroundColor: '#dc2626' }} />
+                                <h1
+                                    className="font-bold"
+                                    style={{
+                                        color: '#111827',
+                                        fontSize: isHDMode ? '56px' : '28px',
+                                        marginBottom: isHDMode ? '16px' : '8px'
+                                    }}
+                                >
+                                    Certificate of Completion
+                                </h1>
+                                <div
+                                    className="mx-auto"
+                                    style={{
+                                        width: isHDMode ? '144px' : '72px',
+                                        height: isHDMode ? '6px' : '3px',
+                                        backgroundColor: '#dc2626',
+                                        marginBottom: isHDMode ? '48px' : '24px'
+                                    }}
+                                />
 
-                                <p className="text-lg mb-4" style={{ color: '#374151' }}>This is to certify that</p>
-                                <h2 className="text-4xl font-bold mb-6 pb-3" style={{ color: '#dc2626', borderBottom: '4px solid #dc2626' }}>{userName}</h2>
+                                <p
+                                    style={{
+                                        color: '#374151',
+                                        fontSize: isHDMode ? '28px' : '16px',
+                                        marginBottom: isHDMode ? '24px' : '12px'
+                                    }}
+                                >
+                                    This is to certify that
+                                </p>
+                                <h2
+                                    className="font-bold"
+                                    style={{
+                                        color: '#dc2626',
+                                        borderBottom: isHDMode ? '6px solid #dc2626' : '3px solid #dc2626',
+                                        fontSize: isHDMode ? '56px' : '28px',
+                                        marginBottom: isHDMode ? '36px' : '18px',
+                                        paddingBottom: isHDMode ? '18px' : '9px'
+                                    }}
+                                >
+                                    {userName}
+                                </h2>
 
-                                <p className="text-lg mb-8" style={{ color: '#374151' }}>has successfully completed the course</p>
-                                <h3 className="text-2xl font-bold mb-12" style={{ color: '#111827' }}>{courseName}</h3>
+                                <p
+                                    style={{
+                                        color: '#374151',
+                                        fontSize: isHDMode ? '28px' : '16px',
+                                        marginBottom: isHDMode ? '48px' : '24px'
+                                    }}
+                                >
+                                    has successfully completed the course
+                                </p>
+                                <h3
+                                    className="font-bold"
+                                    style={{
+                                        color: '#111827',
+                                        fontSize: isHDMode ? '36px' : '20px',
+                                        marginBottom: isHDMode ? '72px' : '36px'
+                                    }}
+                                >
+                                    {courseName}
+                                </h3>
 
-                                <div className="mb-12 text-center">
-                                    <div className="mb-2" style={{ color: '#111827', fontSize: '24px' }}>✓</div>
-                                    <p className="text-sm font-semibold" style={{ color: '#374151' }}>Verified by HubIt</p>
+                                <div
+                                    className="text-center"
+                                    style={{ marginBottom: isHDMode ? '72px' : '36px' }}
+                                >
+                                    <div
+                                        style={{
+                                            color: '#111827',
+                                            fontSize: isHDMode ? '36px' : '24px',
+                                            marginBottom: isHDMode ? '12px' : '8px'
+                                        }}
+                                    >
+                                        ✓
+                                    </div>
+                                    <p
+                                        className="font-semibold"
+                                        style={{
+                                            color: '#374151',
+                                            fontSize: isHDMode ? '20px' : '14px'
+                                        }}
+                                    >
+                                        Verified by HubIt
+                                    </p>
                                 </div>
 
                                 {/* QR Code */}
-                                <div className="flex justify-center mb-8">
-                                    <div className="bg-white p-3 rounded-lg" style={{ border: '2px solid #dc2626' }}>
+                                <div
+                                    className="flex justify-center"
+                                    style={{ marginBottom: isHDMode ? '48px' : '24px' }}
+                                >
+                                    <div className="bg-white rounded-lg" style={{ border: '2px solid #dc2626', padding: isHDMode ? '18px' : '12px' }}>
                                         <QRCodeSVG
                                             value={verificationUrl}
-                                            size={120}
+                                            size={isHDMode ? 220 : 120}
                                             level="H"
                                             includeMargin={true}
                                             bgColor="#ffffff"
@@ -162,11 +248,18 @@ export function CertificateModal({ isOpen, onClose, courseName, userEmail }) {
                                     </div>
                                 </div>
 
-                                <div className="text-sm pt-4" style={{ color: '#374151', borderTop: '1px solid #d1d5db' }}>
-                                    <p>Certificate ID: {certificateId}</p>
-                                    <p>Issued on {new Date().toLocaleDateString()}</p>
-                                    <p className="font-bold mt-2">HubIt Online Learning Platform</p>
-                                    <p className="text-xs mt-2" style={{ color: '#6b7280' }}>Scan QR code to verify certificate</p>
+                                <div
+                                    style={{
+                                        color: '#374151',
+                                        borderTop: '1px solid #d1d5db',
+                                        paddingTop: isHDMode ? '24px' : '12px',
+                                        fontSize: isHDMode ? '20px' : '14px'
+                                    }}
+                                >
+                                    <p style={{ marginBottom: isHDMode ? '8px' : '4px' }}>Certificate ID: {certificateId}</p>
+                                    <p style={{ marginBottom: isHDMode ? '8px' : '4px' }}>Issued on {new Date().toLocaleDateString()}</p>
+                                    <p className="font-bold" style={{ marginTop: isHDMode ? '12px' : '8px', marginBottom: isHDMode ? '12px' : '8px' }}>HubIt Online Learning Platform</p>
+                                    <p style={{ color: '#6b7280', fontSize: isHDMode ? '16px' : '12px', marginTop: isHDMode ? '12px' : '8px' }}>Scan QR code to verify certificate</p>
                                 </div>
                             </div>
 
